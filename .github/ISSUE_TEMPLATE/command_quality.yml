@@ -1,0 +1,62 @@
+name: Command-quality report
+description: Report CX output that succeeded but was empty, incorrect, over-compacted, or misleading.
+title: "[quality] "
+labels:
+  - command-quality
+body:
+  - type: markdown
+    attributes:
+      value: |
+        CX treats successful-but-wrong output as a product defect. Run
+        `cx report <same command>` first when possible, then share only redacted
+        bounded evidence here.
+  - type: input
+    id: report
+    attributes:
+      label: CX report ID
+      description: The ID printed by `cx report`, if available.
+      placeholder: "149"
+  - type: input
+    id: version
+    attributes:
+      label: CX version
+      description: Paste `cx --version`.
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: CX command
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: cx_output
+    attributes:
+      label: CX output
+      description: Paste the smallest redacted output that demonstrates the problem.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: native_output
+    attributes:
+      label: Native comparison
+      description: Show the narrowed non-CX command and the evidence CX missed or changed.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: issue_kind
+    attributes:
+      label: Quality issue
+      options:
+        - Empty output
+        - Missing evidence
+        - Incorrect summary
+        - Over-aggressive truncation
+        - Wrong command routing
+        - Unexpected expansion
+        - Other
+    validations:
+      required: true

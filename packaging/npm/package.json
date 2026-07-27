@@ -1,0 +1,42 @@
+{
+  "name": "@contextlimit/cx",
+  "version": "0.1.0",
+  "description": "Observable command output compression for OpenAI Codex workflows",
+  "license": "MIT",
+  "homepage": "https://github.com/contextlimit/cx",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/contextlimit/cx.git"
+  },
+  "bugs": {
+    "url": "https://github.com/contextlimit/cx/issues"
+  },
+  "bin": {
+    "cx": "bin/cx.js"
+  },
+  "files": [
+    "bin",
+    "lib",
+    "scripts",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/install.cjs",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "cpu": [
+    "arm64",
+    "x64"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,67 @@
+name: Bug report
+description: Report a crash, wrong exit code, lost stderr, install problem, or other CX defect.
+title: "[bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use synthetic data. Do not attach a real `~/.cx/db.sqlite`, credentials,
+        or raw failure artifacts containing private output.
+  - type: input
+    id: version
+    attributes:
+      label: CX version
+      description: Paste `cx --version`.
+      placeholder: cx 0.1.0 (revision)
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - macOS Apple Silicon
+        - macOS Intel
+        - Linux x86_64
+        - Linux ARM64
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Minimal command
+      description: Redact secrets and reduce the command to the smallest reproducer.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected native behavior
+      description: Include the native exit code and the evidence that should remain.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual CX behavior
+      description: Include the CX exit code and bounded redacted output.
+    validations:
+      required: true
+  - type: checkboxes
+    id: settings
+    attributes:
+      label: Relevant settings
+      options:
+        - label: Unsupported passthrough was enabled.
+        - label: Insights recording was enabled.
+        - label: Command text recording was enabled.
+        - label: I reproduced this with the current release.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Include a synthetic fixture or report ID when useful.

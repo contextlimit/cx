@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a new official wrapper, output projection, insight, or workflow improvement.
+title: "[feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What repeated command or output problem should CX solve?
+    validations:
+      required: true
+  - type: textarea
+    id: shapes
+    attributes:
+      label: Representative command shapes
+      description: Include real, redacted argv forms and parser-risky variants.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence that must remain
+      description: List verdicts, diagnostics, paths, counts, or lines the projection cannot hide.
+    validations:
+      required: true
+  - type: textarea
+    id: opportunity
+    attributes:
+      label: Expected opportunity
+      description: Include rough raw size, frequency, or `cx insights opportunities` evidence.
+  - type: checkboxes
+    id: contract
+    attributes:
+      label: Official-support contract
+      options:
+        - label: I understand passthrough is not official support.
+          required: true
+        - label: I can help provide fake-binary and output-metric fixtures.

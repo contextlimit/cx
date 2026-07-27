@@ -1,0 +1,215 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Cargo package version to validate without publishing
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CX_DISABLE_INSIGHTS: "1"
+
+jobs:
+  binaries:
+    name: Build ${{ matrix.asset_platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            asset_platform: darwin-arm64
+          - runner: macos-15-intel
+            asset_platform: darwin-x64
+          - runner: ubuntu-24.04-arm
+            asset_platform: linux-arm64
+          - runner: ubuntu-24.04
+            asset_platform: linux-x64
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - name: Resolve and validate version
+        id: version
+        shell: bash
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          test -n "$version"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] &&
+             [ -n "${{ inputs.version }}" ]; then
+            test "${{ inputs.version }}" = "$version"
+          fi
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            test "$GITHUB_REF_NAME" = "v$version"
+          fi
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: cargo test --locked
+
+      - name: Build release binary
+        run: cargo build --release --locked --bin cx
+
+      - name: Smoke native binary
+        id: asset
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          ASSET_PLATFORM: ${{ matrix.asset_platform }}
+        run: |
+          asset="cx-v${VERSION}-${ASSET_PLATFORM}"
+          cp target/release/cx "$asset"
+          chmod 755 "$asset"
+
+          smoke_home="$RUNNER_TEMP/cx-smoke-home"
+          mkdir -p "$smoke_home"
+          printf 'alpha\nbeta\n' > "$RUNNER_TEMP/cx-smoke.txt"
+
+          version_output="$(HOME="$smoke_home" "./$asset" --version)"
+          case "$version_output" in
+            "cx ${VERSION} (${GITHUB_SHA:0:12})") ;;
+            *)
+              printf 'unexpected version output: %s\n' "$version_output" >&2
+              exit 1
+              ;;
+          esac
+
+          HOME="$smoke_home" "./$asset" --help | grep -q "Usage: cx"
+          output="$(HOME="$smoke_home" "./$asset" -- cat "$RUNNER_TEMP/cx-smoke.txt")"
+          test "$output" = "$(printf 'alpha\nbeta')"
+          test ! -e "$smoke_home/.cx/db.sqlite"
+
+          shasum -a 256 "$asset" > "$asset.sha256"
+          printf 'asset=%s\n' "$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Upload native asset
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.asset.outputs.asset }}
+          path: |
+            ${{ steps.asset.outputs.asset }}
+            ${{ steps.asset.outputs.asset }}.sha256
+          compression-level: 0
+          if-no-files-found: error
+
+  package:
+    name: Assemble release
+    needs:
+      - binaries
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download native assets
+        uses: actions/download-artifact@v8
+        with:
+          pattern: cx-v*
+          path: dist
+          merge-multiple: true
+
+      - name: Validate and assemble release files
+        id: package
+        shell: bash
+        run: |
+          version="$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)"
+          test -n "$version"
+
+          expected=(
+            "cx-v${version}-darwin-arm64"
+            "cx-v${version}-darwin-x64"
+            "cx-v${version}-linux-arm64"
+            "cx-v${version}-linux-x64"
+          )
+
+          for asset in "${expected[@]}"; do
+            test -f "dist/$asset"
+            test -f "dist/$asset.sha256"
+            (
+              cd dist
+              shasum -a 256 -c "$asset.sha256"
+            )
+          done
+
+          archive="cx-${version}-source.tar.gz"
+          git archive --format=tar --prefix="cx-${version}/" "$GITHUB_SHA" |
+            gzip -n > "dist/$archive"
+
+          cat dist/cx-v*.sha256 > dist/checksums.txt
+          (
+            cd dist
+            shasum -a 256 "$archive" >> checksums.txt
+            LC_ALL=C sort -k2,2 checksums.txt -o checksums.txt
+          )
+          test "$(wc -l < dist/checksums.txt | tr -d ' ')" = "5"
+          rm dist/cx-v*.sha256
+
+          if find dist -maxdepth 1 -type f -name '*.sha256' | grep -q .; then
+            echo "unexpected per-asset checksum file remains" >&2
+            exit 1
+          fi
+
+          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
+          printf 'archive=%s\n' "$archive" >> "$GITHUB_OUTPUT"
+
+      - name: Upload assembled release
+        uses: actions/upload-artifact@v7
+        with:
+          name: cx-release-${{ github.run_id }}
+          path: dist/*
+          compression-level: 0
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - package
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download assembled release
+        uses: actions/download-artifact@v8
+        with:
+          name: cx-release-${{ github.run_id }}
+          path: dist
+
+      - name: Publish immutable release identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists; refusing to replace it" >&2
+            exit 1
+          fi
+
+          version="${GITHUB_REF_NAME#v}"
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft \
+            --title "CX ${version}" \
+            --generate-notes \
+            --verify-tag
+          gh release edit "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --draft=false

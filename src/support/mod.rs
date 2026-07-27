@@ -1,0 +1,21 @@
+pub(crate) mod capture_cache;
+pub(crate) mod cmake_failure;
+pub(crate) mod command_output;
+pub mod command_repair;
+pub mod config;
+pub mod document_formats;
+pub mod failure_artifact;
+pub mod insights;
+pub mod jq_fix;
+pub mod logs;
+pub(crate) mod output_projection;
+pub(crate) mod output_window;
+pub mod paths;
+pub mod redaction;
+pub mod runner;
+pub mod shell_hints;
+pub mod smart_read;
+pub(crate) mod source_lines;
+#[cfg(test)]
+pub(crate) mod test_support;
+pub mod utils;

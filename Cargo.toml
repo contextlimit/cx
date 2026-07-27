@@ -1,0 +1,53 @@
+[package]
+name = "cx"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.86"
+description = "Observable command output compression for AI coding agents"
+repository = "https://github.com/contextlimit/cx"
+homepage = "https://github.com/contextlimit/cx"
+documentation = "https://github.com/contextlimit/cx/tree/main/docs/features"
+readme = "README.md"
+license = "MIT"
+keywords = ["cli", "ai", "tokens", "observability", "developer-tools"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [".tmp/**", ".github/**"]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "cx"
+path = "src/bin/cx.rs"
+
+[dependencies]
+anyhow = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+flate2 = "1.1"
+fs2 = "0.4"
+glob = "0.3"
+oxc_allocator = "0.75"
+oxc_parser = "0.75"
+oxc_span = "0.75"
+regex = "1"
+rusqlite = { version = "0.37", features = ["bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+walkdir = "2.5"
+which = "8"
+
+[dev-dependencies]
+criterion = { version = "0.8.2", default-features = false, features = ["cargo_bench_support"] }
+tempfile = "3.15"
+
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+iai-callgrind = "0.16.1"
+
+[[bench]]
+name = "cx_hot_paths"
+harness = false
+
+[[bench]]
+name = "cx_iai_hot_paths"
+harness = false

@@ -1,0 +1,49 @@
+# frozen_string_literal: true
+
+# Observable command output compression for AI coding agents.
+class Cx < Formula
+  desc "Observable command output compression for AI coding agents"
+  homepage "https://github.com/contextlimit/cx"
+  version "@VERSION@"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "@DARWIN_ARM64_URL@", using: :nounzip
+      sha256 "@DARWIN_ARM64_SHA256@"
+    end
+
+    on_intel do
+      url "@DARWIN_X64_URL@", using: :nounzip
+      sha256 "@DARWIN_X64_SHA256@"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "@LINUX_ARM64_URL@", using: :nounzip
+      sha256 "@LINUX_ARM64_SHA256@"
+    end
+
+    on_intel do
+      url "@LINUX_X64_URL@", using: :nounzip
+      sha256 "@LINUX_X64_SHA256@"
+    end
+  end
+
+  def install
+    asset = Dir["cx-v#{version}-*"].first
+    odie "downloaded CX asset is missing" unless asset
+
+    chmod 0755, asset
+    bin.install asset => "cx"
+  end
+
+  test do
+    assert_match "cx #{version}", shell_output("#{bin}/cx --version")
+    assert_match "Usage: cx", shell_output("#{bin}/cx --help")
+
+    (testpath/"fixture.txt").write "alpha\nbeta\n"
+    assert_equal "alpha\nbeta\n", shell_output("#{bin}/cx -- cat #{testpath}/fixture.txt")
+  end
+end

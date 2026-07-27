@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CX_DISABLE_INSIGHTS: "1"
+
+jobs:
+  quality:
+    name: Linux quality gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Install Node.js 18
+        uses: actions/setup-node@v7
+        with:
+          node-version: "18"
+          package-manager-cache: false
+
+      - name: Lint workflows
+        run: |
+          go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          "$(go env GOPATH)/bin/actionlint"
+
+      - name: Lint shell scripts
+        run: shellcheck scripts/install.sh packaging/homebrew/render-formula.sh
+
+      - name: Format
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: >-
+          cargo clippy --all-targets --
+          -W clippy::too_many_lines
+          -W clippy::cognitive_complexity
+
+      - name: Test
+        run: cargo test
+
+      - name: Test npm distribution
+        run: |
+          npm ci --ignore-scripts --prefix packaging/npm
+          npm test --prefix packaging/npm
+          (
+            cd packaging/npm
+            npm pack --dry-run --ignore-scripts
+          )
+
+      - name: Package
+        run: cargo package
+
+      - name: Compile Criterion benchmarks
+        run: cargo bench --bench cx_hot_paths --no-run
+
+      - name: Compile IAI benchmarks
+        run: cargo bench --bench cx_iai_hot_paths --no-run
+
+  macos:
+    name: macOS release and install
+    runs-on: macos-15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt,clippy
+          rustup default stable
+
+      - name: Test
+        run: cargo test
+
+      - name: Build release binary
+        run: cargo build --release --bin cx
+
+      - name: Install into isolated home
+        env:
+          HOME: ${{ runner.temp }}/cx-home
+          CX_INSTALL_SKIP_BUILD: "1"
+          CX_INSTALL_BIN_PATH: ${{ github.workspace }}/target/release/cx
+        run: |
+          ./scripts/install.sh
+          "$HOME/.local/bin/cx" --version
+          "$HOME/.local/bin/cx" --help >/dev/null
+
+  msrv:
+    name: Rust 1.86 compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Install Rust 1.86
+        run: rustup toolchain install 1.86.0 --profile minimal
+
+      - name: Check locked dependency graph
+        run: cargo +1.86.0 check --locked
