@@ -91,7 +91,7 @@ jobs:
           esac
 
           HOME="$smoke_home" "./$asset" --help | grep -q "Usage: cx"
-          output="$(HOME="$smoke_home" "./$asset" -- cat "$RUNNER_TEMP/cx-smoke.txt")"
+          output="$(CX_DISABLE_INSIGHTS=0 HOME="$smoke_home" "./$asset" -- cat "$RUNNER_TEMP/cx-smoke.txt")"
           test "$output" = "$(printf 'alpha\nbeta')"
           test -e "$smoke_home/.cx/db.sqlite"
 
