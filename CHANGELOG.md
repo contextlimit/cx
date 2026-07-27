@@ -5,7 +5,24 @@ engineering revision markers and are not package versions.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Checksum-verified one-line installer hosted at `install-cx.asi.sh`.
+
+### Changed
+
+- Public settings documentation now leads with the complete per-setting CLI
+  command and separates default values, accepted arguments, and descriptions.
+
+## [0.1.1] - 2026-07-27
+
+### Changed
+
+- Local invocation metrics, redacted command shapes, unsupported passthrough,
+  and command optimizations are enabled by default.
+- Full command text, source labels, failure responses, and response previews
+  remain opt-in.
+- Existing explicit settings remain authoritative when upgrading.
 
 ## [0.1.0] - 2026-07-27
 
@@ -43,5 +60,6 @@ Initial public release.
 - Explicit unsupported-command passthrough policy.
 - Command-quality reporting for wrong or misleading successful output.
 
-[Unreleased]: https://github.com/contextlimit/cx/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/contextlimit/cx/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/contextlimit/cx/releases/tag/v0.1.1
 [0.1.0]: https://github.com/contextlimit/cx/releases/tag/v0.1.0

@@ -180,7 +180,7 @@ renders the file.
 
 ## Insights Labels
 
-When insights are enabled, these commands are useful at two levels:
+With the default insights recording, these commands are useful at two levels:
 
 - process: `cat`, `head`, `tail`, `sed`, or `nl`
 - command family: read-like command family or rewritten read behavior

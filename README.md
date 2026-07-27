@@ -8,7 +8,7 @@
 
 `cx` is an independent local Rust CLI built for OpenAI Codex workflows. It runs
 development commands, keeps the evidence a coding agent needs, and records
-exactly how much output it saved in an optional local SQLite ledger.
+exactly how much output it saved in a local SQLite ledger.
 
 CX is not an OpenAI product, and no OpenAI endorsement is implied.
 
@@ -288,28 +288,28 @@ View the current values and database location with:
 cx insights settings
 ```
 
-Every public setting is a Boolean and can be changed with the command and
-argument shown below:
-
-| Setting | Default | What it controls | CLI command | Arguments |
-| --- | --- | --- | --- | --- |
-| `record_invocations` | `true` | Record invocation, exit-code, and output-savings metrics | `cx insights settings --set` | `record_invocations=<true\|false>` |
-| `record_command_text` | `false` | Store redacted readable command text and argv JSON | `cx insights settings --set` | `record_command_text=<true\|false>` |
-| `record_command_shape` | `true` | Store a redacted command shape and stable shape hash | `cx insights settings --set` | `record_command_shape=<true\|false>` |
-| `record_sources` | `false` | Store command output source or target labels | `cx insights settings --set` | `record_sources=<true\|false>` |
-| `record_failures` | `false` | Record actionable failed-command details | `cx insights settings --set` | `record_failures=<true\|false>` |
-| `record_failure_responses` | `false` | Store bounded redacted CX and native failure responses | `cx insights settings --set` | `record_failure_responses=<true\|false>` |
-| `record_response_previews` | `false` | Store bounded redacted emitted and native response previews | `cx insights settings --set` | `record_response_previews=<true\|false>` |
-| `passthrough_unsupported_commands` | `true` | Directly execute unsupported command families through `cx --` | `cx insights settings --set` | `passthrough_unsupported_commands=<true\|false>` |
-| `command_optimizations` | `true` | Apply optional CX command repairs and optimizations | `cx insights settings --set` | `command_optimizations=<true\|false>` |
-| `compact_document_search_results` | `false` | Permit compaction of grep/search results from document and text files | `cx insights settings --set` | `compact_document_search_results=<true\|false>` |
-
 For example:
 
 ```sh
 cx insights settings --set record_command_text=true
 cx insights settings --set record_invocations=false
 ```
+
+Every public setting is a Boolean and can be changed with the command and
+argument shown below:
+
+| CLI command | Default | Arguments | Description |
+| --- | --- | --- | --- |
+| `cx insights settings --set record_invocations=<value>` | `true` | `true\|false` | Record invocation, exit-code, and output-savings metrics |
+| `cx insights settings --set record_command_text=<value>` | `false` | `true\|false` | Store redacted readable command text and argv JSON |
+| `cx insights settings --set record_command_shape=<value>` | `true` | `true\|false` | Store a redacted command shape and stable shape hash |
+| `cx insights settings --set record_sources=<value>` | `false` | `true\|false` | Store command output source or target labels |
+| `cx insights settings --set record_failures=<value>` | `false` | `true\|false` | Record actionable failed-command details |
+| `cx insights settings --set record_failure_responses=<value>` | `false` | `true\|false` | Store bounded redacted CX and native failure responses |
+| `cx insights settings --set record_response_previews=<value>` | `false` | `true\|false` | Store bounded redacted emitted and native response previews |
+| `cx insights settings --set passthrough_unsupported_commands=<value>` | `true` | `true\|false` | Directly execute unsupported command families through `cx --` |
+| `cx insights settings --set command_optimizations=<value>` | `true` | `true\|false` | Apply optional CX command repairs and optimizations |
+| `cx insights settings --set compact_document_search_results=<value>` | `false` | `true\|false` | Permit compaction of grep/search results from document and text files |
 
 <table>
   <tr>
@@ -430,13 +430,13 @@ CX parser and auto router
   |       v
   |    command-specific projection
   |
-  +--> optional exact unsupported passthrough
+  +--> exact unsupported passthrough
           |
           v
 stdout + stderr + real exit code
           |
           v
-optional local SQLite metrics
+local SQLite metrics (enabled by default)
 ```
 
 The file-backed process boundary avoids a common pipe hang where a descendant
@@ -449,8 +449,10 @@ inherits stdout or stderr after the direct child exits.
 - Filters operate on real captured output.
 - Failure artifacts preserve nonzero raw evidence when available.
 - Tiny truthful summaries can expand output, and CX records that expansion.
-- Insights recording, command text, source labels, failure responses, and
-  passthrough are separate settings.
+- Invocation metrics, redacted command shapes, and unsupported passthrough are
+  enabled by default.
+- Command text, source labels, failure responses, and response previews remain
+  opt-in settings.
 - Reinstalling the binary does not delete the insights database.
 - Tests use isolated temporary databases, never the real `~/.cx/db.sqlite`.
 

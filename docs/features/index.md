@@ -6,12 +6,12 @@ four questions:
 - what command shapes CX accepts
 - what those shapes convert to internally
 - what output contract CX promises
-- what insights labels or telemetry are produced when recording is enabled
+- what insights labels or telemetry the default local recording produces
 
 CX remains a narrow command replacement for high-output local commands. It is not
-a shell, daemon, MCP server, or generic memory system. Unsupported passthrough
-can be enabled in a local environment for measurement, but passthrough is not the
-same thing as official command support.
+a shell, daemon, MCP server, or generic memory system. Unsupported passthrough is
+enabled by default for exact execution and measurement, but passthrough is not
+the same thing as official command support.
 
 ## Command Families
 
@@ -60,11 +60,12 @@ Use the page for each command family to choose the correct mode.
 
 ## Insights
 
-When insights are enabled, CX records command metrics in `~/.cx/db.sqlite` or in
-the database selected by `CX_INSIGHTS_DB_PATH`. The key metrics are raw bytes,
-characters, lines, approximate tokens, emitted equivalents, saved values, and
-compression ratios. Command text, source labels, failure details, unsupported
-passthrough, and command optimizations are controlled by settings.
+With the default settings, CX records command metrics in `~/.cx/db.sqlite` or
+in the database selected by `CX_INSIGHTS_DB_PATH`. The key metrics are raw
+bytes, characters, lines, approximate tokens, emitted equivalents, saved
+values, and compression ratios. Command text, source labels, and failure
+details remain separate opt-in settings. Unsupported passthrough and command
+optimizations are enabled by default but remain configurable.
 
 The feature pages name the command family and observation source where those
 labels are important for analysis.

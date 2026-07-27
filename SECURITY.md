@@ -48,6 +48,10 @@ Security reports are especially valuable for:
 
 ## Local Data
 
-Insights are optional and disabled by default. CX has no vendor analytics
-service or remote telemetry path. Failure artifacts and an enabled database can
-contain sensitive command output, so protect them like development logs.
+Local invocation metrics and redacted command shapes are enabled by default.
+CX has no vendor analytics service or remote telemetry path. Full command text,
+source labels, failure responses, and response previews remain disabled by
+default. Users can disable passive recording with
+`record_invocations=false` or all insights writes for one process with
+`CX_DISABLE_INSIGHTS=1`. Failure artifacts and the local database can contain
+sensitive command output, so protect them like development logs.

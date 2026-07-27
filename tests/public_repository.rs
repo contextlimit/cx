@@ -93,9 +93,20 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
         "repository must ship the hosted bootstrap installer source"
     );
 
+    let example = readme.find("For example:").unwrap();
+    let settings_intro = readme
+        .find("Every public setting is a Boolean and can be changed")
+        .unwrap();
+    let settings_table = readme
+        .find("| CLI command | Default | Arguments | Description |")
+        .unwrap();
     assert!(
-        readme.contains("| Setting | Default | What it controls | CLI command | Arguments |"),
-        "README must expose the public settings table"
+        example < settings_intro && settings_intro < settings_table,
+        "README settings example must precede the settings table"
+    );
+    assert!(
+        !readme.contains("| Setting | Default | What it controls | CLI command | Arguments |"),
+        "README must not expose the superseded settings table layout"
     );
     for setting in [
         "record_invocations",
@@ -109,13 +120,16 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
         "command_optimizations",
         "compact_document_search_results",
     ] {
+        let command = format!("| `cx insights settings --set {setting}=<value>` |");
+        let row = readme
+            .lines()
+            .find(|line| line.starts_with(&command))
+            .unwrap_or_else(|| {
+                panic!("README settings table is missing the CLI command for `{setting}`")
+            });
         assert!(
-            readme.contains(&format!("| `{setting}` |")),
-            "README settings table is missing `{setting}`"
-        );
-        assert!(
-            readme.contains(&format!("`{setting}=<true\\|false>`")),
-            "README settings table is missing arguments for `{setting}`"
+            row.contains("| `true\\|false` |"),
+            "README settings table has verbose or missing arguments for `{setting}`"
         );
     }
 
@@ -125,6 +139,37 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
     assert!(
         between.contains("</tr>") && between.contains("<tr>"),
         "local-insights screenshots must render in separate table rows"
+    );
+}
+
+#[test]
+fn public_security_and_feature_docs_describe_default_local_insights() {
+    let root = repo_root();
+    let security = read(root.join("SECURITY.md"));
+    let feature_index = read(root.join("docs/features/index.md"));
+    let changelog = read(root.join("CHANGELOG.md"));
+
+    assert!(
+        security.contains(
+            "Local invocation metrics and redacted command shapes are enabled by default."
+        ),
+        "SECURITY.md must describe the default local-insights behavior"
+    );
+    assert!(
+        !security.contains("Insights are optional and disabled by default."),
+        "SECURITY.md contains the superseded insights default"
+    );
+    assert!(
+        security.contains("CX has no vendor analytics service or remote telemetry path."),
+        "SECURITY.md must distinguish local insights from remote telemetry"
+    );
+    assert!(
+        feature_index.contains("With the default settings, CX records command metrics"),
+        "feature index must describe the default metrics behavior"
+    );
+    assert!(
+        changelog.contains("## [0.1.1] - 2026-07-27"),
+        "changelog must document the release that enabled default metrics"
     );
 }
 
