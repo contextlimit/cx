@@ -1,7 +1,9 @@
 /target
 .DS_Store
-/.tmp
+.tmp/
+/.wrangler
 /coverage
+/packaging/cloudflare/generated
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal

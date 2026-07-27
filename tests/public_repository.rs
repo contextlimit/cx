@@ -60,6 +60,8 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
     for required in [
         "independent local Rust CLI built for OpenAI Codex workflows",
         "CX is not an OpenAI product",
+        "curl -fsSL https://install-cx.asi.sh | sh",
+        "CX_INSTALL_METHOD=source",
         "npm install -g @contextlimit/cx",
         "brew install contextlimit/tap/cx",
         "~/.codex/AGENTS.md",
@@ -79,13 +81,16 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
     ] {
         assert!(readme.contains(required), "README missing `{required}`");
     }
-
     let install = readme.find("## Install").unwrap();
     let agent_instruction = readme.find("### Agent Instruction").unwrap();
     let quick_start = readme.find("## Quick Start").unwrap();
     assert!(
         install < agent_instruction && agent_instruction < quick_start,
         "Agent Instruction must remain an Install subheading"
+    );
+    assert!(
+        root.join("install.sh").is_file(),
+        "repository must ship the hosted bootstrap installer source"
     );
 
     assert!(
@@ -165,6 +170,29 @@ fn public_readme_local_links_and_png_assets_resolve() {
             expected_height
         );
     }
+}
+
+#[test]
+fn cloudflare_installer_distribution_is_narrow_and_reproducible() {
+    let root = repo_root();
+    let cloudflare = root.join("packaging/cloudflare");
+    let config: serde_json::Value =
+        serde_json::from_str(&read(cloudflare.join("wrangler.json"))).unwrap();
+    let worker = read(cloudflare.join("worker.mjs"));
+    let builder = read(cloudflare.join("build-installer.mjs"));
+    let deploy = read(cloudflare.join("deploy.sh"));
+
+    assert_eq!(config["name"], "cx-installer");
+    assert_eq!(config["workers_dev"], false);
+    assert_eq!(config["routes"][0]["pattern"], "install-cx.asi.sh");
+    assert_eq!(config["routes"][0]["custom_domain"], true);
+    assert!(worker.contains(r#"new Set(["/", "/install", "/install.sh"])"#));
+    assert!(worker.contains(r#"request.method !== "GET" && request.method !== "HEAD""#));
+    assert!(worker.contains(r#"import installerBase64 from "./generated/installer.mjs""#));
+    assert!(builder.contains("../../install.sh"));
+    assert!(builder.contains("toString(\"base64\")"));
+    assert!(deploy.contains("node \"${script_dir}/build-installer.mjs\""));
+    assert!(deploy.contains("wrangler@4.114.0 deploy"));
 }
 
 #[test]

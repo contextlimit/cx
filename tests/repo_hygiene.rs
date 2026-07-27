@@ -25,6 +25,7 @@ fn source_tree_uses_cx_naming_only() {
     collect_files(&root.join("src"), &mut files);
     collect_files(&root.join("benches"), &mut files);
     collect_files(&root.join("examples"), &mut files);
+    files.push(root.join("install.sh"));
     files.push(root.join("scripts/install.sh"));
 
     for file in files {

@@ -38,7 +38,15 @@ jobs:
           "$(go env GOPATH)/bin/actionlint"
 
       - name: Lint shell scripts
-        run: shellcheck scripts/install.sh packaging/homebrew/render-formula.sh
+        run: >-
+          shellcheck
+          install.sh
+          scripts/install.sh
+          packaging/cloudflare/deploy.sh
+          packaging/homebrew/render-formula.sh
+
+      - name: Test Cloudflare installer Worker
+        run: node --test packaging/cloudflare/tests/worker.test.mjs
 
       - name: Format
         run: cargo fmt --check

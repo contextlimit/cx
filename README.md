@@ -61,6 +61,36 @@ system, hosted proxy, or remote telemetry service.
 
 ## Install
 
+### One-line installer
+
+```sh
+curl -fsSL https://install-cx.asi.sh | sh
+cx --version
+```
+
+The bootstrap installer detects macOS/Linux and Apple Silicon, ARM64, or x64,
+then downloads the latest checksum-pinned native binary from the
+[`contextlimit/cx` GitHub release](https://github.com/contextlimit/cx/releases).
+It installs the runtime at `~/.cx/bin/cx` and the command wrapper at
+`~/.local/bin/cx`. It does not require `sudo`, Rust, or Git, and it does not
+create `~/.cx/db.sqlite` during installation.
+
+To pin a release:
+
+```sh
+curl -fsSL https://install-cx.asi.sh | CX_INSTALL_VERSION=0.1.1 sh
+```
+
+To clone the matching release tag and build it locally with Cargo instead:
+
+```sh
+curl -fsSL https://install-cx.asi.sh | CX_INSTALL_METHOD=source sh
+```
+
+Source mode requires Git and a current stable Rust toolchain. It clones the
+selected `vX.Y.Z` tag and runs a locked release build before installing the same
+runtime/wrapper layout.
+
 ### npm
 
 Requires Node.js 18 or newer:

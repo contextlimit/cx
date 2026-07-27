@@ -1,0 +1,12 @@
+{
+  "name": "cx-installer",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-07-27",
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "install-cx.asi.sh",
+      "custom_domain": true
+    }
+  ]
+}
