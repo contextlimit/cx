@@ -250,6 +250,37 @@ CX redacts obvious tokens, passwords, API keys, and secret-like values before
 storage, but redaction is conservative. Leave command text and source recording
 off unless you want that information in your local database.
 
+### Settings
+
+View the current values and database location with:
+
+```sh
+cx insights settings
+```
+
+Every public setting is a Boolean and can be changed with the command and
+argument shown below:
+
+| Setting | Default | What it controls | CLI command | Arguments |
+| --- | --- | --- | --- | --- |
+| `record_invocations` | `true` | Record invocation, exit-code, and output-savings metrics | `cx insights settings --set` | `record_invocations=<true\|false>` |
+| `record_command_text` | `false` | Store redacted readable command text and argv JSON | `cx insights settings --set` | `record_command_text=<true\|false>` |
+| `record_command_shape` | `true` | Store a redacted command shape and stable shape hash | `cx insights settings --set` | `record_command_shape=<true\|false>` |
+| `record_sources` | `false` | Store command output source or target labels | `cx insights settings --set` | `record_sources=<true\|false>` |
+| `record_failures` | `false` | Record actionable failed-command details | `cx insights settings --set` | `record_failures=<true\|false>` |
+| `record_failure_responses` | `false` | Store bounded redacted CX and native failure responses | `cx insights settings --set` | `record_failure_responses=<true\|false>` |
+| `record_response_previews` | `false` | Store bounded redacted emitted and native response previews | `cx insights settings --set` | `record_response_previews=<true\|false>` |
+| `passthrough_unsupported_commands` | `true` | Directly execute unsupported command families through `cx --` | `cx insights settings --set` | `passthrough_unsupported_commands=<true\|false>` |
+| `command_optimizations` | `true` | Apply optional CX command repairs and optimizations | `cx insights settings --set` | `command_optimizations=<true\|false>` |
+| `compact_document_search_results` | `false` | Permit compaction of grep/search results from document and text files | `cx insights settings --set` | `compact_document_search_results=<true\|false>` |
+
+For example:
+
+```sh
+cx insights settings --set record_command_text=true
+cx insights settings --set record_invocations=false
+```
+
 <table>
   <tr>
     <td align="center">

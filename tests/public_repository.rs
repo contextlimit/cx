@@ -88,6 +88,32 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
         "Agent Instruction must remain an Install subheading"
     );
 
+    assert!(
+        readme.contains("| Setting | Default | What it controls | CLI command | Arguments |"),
+        "README must expose the public settings table"
+    );
+    for setting in [
+        "record_invocations",
+        "record_command_text",
+        "record_command_shape",
+        "record_sources",
+        "record_failures",
+        "record_failure_responses",
+        "record_response_previews",
+        "passthrough_unsupported_commands",
+        "command_optimizations",
+        "compact_document_search_results",
+    ] {
+        assert!(
+            readme.contains(&format!("| `{setting}` |")),
+            "README settings table is missing `{setting}`"
+        );
+        assert!(
+            readme.contains(&format!("`{setting}=<true\\|false>`")),
+            "README settings table is missing arguments for `{setting}`"
+        );
+    }
+
     let local_files = readme.find("docs/assets/cx-local-sqlite.png").unwrap();
     let sqlite_tables = readme.find("docs/assets/cx-sqlite-tables.png").unwrap();
     let between = &readme[local_files..sqlite_tables];
