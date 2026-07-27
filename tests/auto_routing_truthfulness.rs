@@ -186,14 +186,51 @@ fn explicit_auto_native_diff_executes_diff_instead_of_git() {
 }
 
 #[test]
-fn explicit_passthrough_override_executes_without_recording_or_database_creation() {
+fn default_passthrough_records_invocation_without_setup() {
+    let (_temp, home, bin) = fixture_roots("default-passthrough");
+    write_executable(&bin, "audit-tool", "#!/bin/sh\nprintf 'audit-ok\\n'\n");
+
+    let output = cx_command(&home, &bin)
+        .args(["--", "audit-tool"])
+        .env_remove("CX_DISABLE_INSIGHTS")
+        .output()
+        .unwrap();
+
+    assert!(output.status.success(), "{output:?}");
+    assert_eq!(String::from_utf8_lossy(&output.stdout), "audit-ok\n");
+    assert!(output.stderr.is_empty(), "{output:?}");
+    let connection = rusqlite::Connection::open(home.join(".cx/db.sqlite")).unwrap();
+    let row = connection
+        .query_row(
+            "SELECT process, command_family, command, argv_json, command_shape \
+             FROM command_invocations ORDER BY id DESC LIMIT 1",
+            [],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, String>(3)?,
+                    row.get::<_, String>(4)?,
+                ))
+            },
+        )
+        .unwrap();
+    assert_eq!(row.0, "audit-tool");
+    assert_eq!(row.1, "passthrough audit-tool");
+    assert_eq!(row.2, "passthrough audit-tool");
+    assert_eq!(row.3, "[]");
+    assert_eq!(row.4, "audit-tool");
+}
+
+#[test]
+fn default_passthrough_respects_disabled_insights_without_database_creation() {
     let (_temp, home, bin) = fixture_roots("disabled-insights-passthrough");
     write_executable(&bin, "audit-tool", "#!/bin/sh\nprintf 'audit-ok\\n'\n");
 
     let output = cx_command(&home, &bin)
         .args(["--", "audit-tool"])
         .env("CX_DISABLE_INSIGHTS", "1")
-        .env("CX_ENABLE_UNSUPPORTED_PASSTHROUGH", "1")
         .output()
         .unwrap();
 

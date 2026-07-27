@@ -33,7 +33,6 @@ preserved.
 Use unsupported passthrough for command trees CX does not officially understand:
 
 ```sh
-cx insights settings --set passthrough_unsupported_commands=true
 cx -- docker inspect api
 cx -- kubectl get pods -A
 ```

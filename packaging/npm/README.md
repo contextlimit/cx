@@ -20,8 +20,11 @@ The package does not:
 - invoke a shell during installation;
 - edit shell profiles;
 - install into `~/.cx`;
-- enable insights recording;
 - send telemetry.
+
+The first command run through CX creates `~/.cx/db.sqlite` and records local
+invocation and savings metrics by default. Full command text, source labels,
+failure responses, and response previews remain opt-in.
 
 Direct access to GitHub Releases is required. Environments that disable npm
 lifecycle scripts should use Homebrew or the source installer instead.

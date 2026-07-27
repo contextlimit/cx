@@ -191,16 +191,20 @@ fn newer_database_schema_is_rejected_without_writing_telemetry() {
         || {
             record("seed").unwrap();
             let connection = rusqlite::Connection::open(&db_path).unwrap();
+            let newer_version = store::INSIGHTS_DATABASE_SCHEMA_VERSION + 1;
             connection
                 .execute(
-                    "UPDATE schema_meta SET value = '20' WHERE key = 'insights_schema_version'",
-                    [],
+                    "UPDATE schema_meta SET value = ?1 WHERE key = 'insights_schema_version'",
+                    [newer_version.to_string()],
                 )
                 .unwrap();
             drop(connection);
 
             let error = record("next").unwrap_err();
-            assert!(error.to_string().contains("newer than supported schema 19"));
+            assert!(error.to_string().contains(&format!(
+                "newer than supported schema {}",
+                store::INSIGHTS_DATABASE_SCHEMA_VERSION
+            )));
             let connection = rusqlite::Connection::open(&db_path).unwrap();
             let invocations: u64 = connection
                 .query_row("SELECT COUNT(*) FROM command_invocations", [], |row| {

@@ -4,7 +4,7 @@ use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use super::queries::{classified_failure_sql, command_family_query_expression, legacy_process_sql};
 use super::{insights_db_file, opportunities, repairs, routing, settings, PreparedInvocation};
 
-pub(super) const INSIGHTS_DATABASE_SCHEMA_VERSION: u64 = 19;
+pub(super) const INSIGHTS_DATABASE_SCHEMA_VERSION: u64 = 20;
 const FAILURE_ROLLUP_SCHEMA_VERSION: u64 = 15;
 const WAL_SCHEMA_VERSION: u64 = 17;
 

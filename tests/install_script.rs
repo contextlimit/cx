@@ -977,7 +977,7 @@ fn assert_installed_report_triage_contract(
             |row| row.get(0),
         )
         .unwrap();
-    assert_eq!(schema_version, "19");
+    assert_eq!(schema_version, "20");
 }
 
 #[cfg(unix)]

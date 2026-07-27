@@ -54,7 +54,7 @@ CX takes the middle path:
 | Recover failures | Raw nonzero output is linked from `~/.cx/cache/failures` |
 | Verify savings | Raw, emitted, saved, and expanded metrics live in SQLite |
 | Catch wrong summaries | `cx report` records successful-but-incorrect output too |
-| Explore unsupported tools | Optional passthrough keeps native output exact and records opportunities |
+| Explore unsupported tools | Default passthrough keeps native output exact and records opportunities |
 
 CX is intentionally narrow. It is not a shell, daemon, MCP server, memory
 system, hosted proxy, or remote telemetry service.
@@ -128,6 +128,52 @@ printf '%s\n' \
 chmod +x ~/.local/bin/cx
 ```
 
+### Agent Instruction
+
+Installing CX puts the binary on `PATH`; it does not configure Codex. Open
+`~/.codex/AGENTS.md` and add **one** of the following blocks.
+
+No setup command is required. Unsupported-command passthrough and local
+invocation metrics are enabled by default. The first `cx -- ...` command creates
+`~/.cx/db.sqlite` and records output metrics plus a redacted command shape. Full
+command text, source labels, and response previews remain opt-in.
+
+#### Simple Codex instruction
+
+Add this compact block to `~/.codex/AGENTS.md`:
+
+```text
+## CX command execution
+
+- Prefix every feasible external command with `cx --`.
+- Use `cx sh -lc '<command>'` when pipes, redirects, variables, globs, heredocs, or other shell syntax are required.
+- If CX output is clearly wrong, empty, or misleading, run `cx report <the same cx command>` before using the smallest useful native fallback.
+```
+
+#### Advanced Codex instruction
+
+Add this block to `~/.codex/AGENTS.md` when Codex should also preserve exact
+evidence and protect local telemetry:
+
+```text
+## CX command execution
+
+- Prefix every feasible external command with `cx --`. Auto mode routes supported shapes through CX compaction and directly executes unsupported shapes by default.
+- Use `cx sh -lc '<command>'` or `cx sh <<'BASH' ... BASH` only when shell parsing is required. Do not expect direct argv execution to interpret pipes, redirects, environment assignments, globs, or heredocs.
+- For a remote multiline script, use `cx -- ssh <host> "bash -s" <<'REMOTE' ... REMOTE`.
+- Use `cx -- git diff` for compact human review. Use `cx -- git evidence-diff [COMMIT_OR_RANGE] [-- <paths...>]` for exact patch evidence consumed by another tool.
+- Preserve every `[full output: ...]` pointer emitted after a nonzero command; it identifies recoverable native output.
+- If CX output is clearly wrong, empty, truncated, or misleading even when the command exits zero, run `cx report <the same cx command>` before using a narrow native fallback.
+- Do not use `cx proxy`; unsupported commands use `cx -- <command...>`.
+- Keep fallback output narrow, for example `git diff -- <path>`, `rg -n <pattern> <path>`, or a fixed source range.
+- Never delete, reset, overwrite, or migrate the real `~/.cx/db.sqlite` during tests. Point experiments at `CX_INSIGHTS_DB_PATH=<project>/.tmp/cx.sqlite`.
+- Invocation metrics and redacted command shapes are recorded locally by default. Command text, sources, failure responses, and response previews are separate settings; do not enable them unless the user wants those local values retained.
+```
+
+See [the passthrough contract](docs/features/passthrough.md) and
+[insights settings](docs/features/insights.md) for the exact execution and
+privacy controls.
+
 ## Quick Start
 
 Auto mode is the normal agent-facing entrypoint:
@@ -141,14 +187,8 @@ cx -- ps -axo pid,ppid,etime,command
 ```
 
 `cx -- <command...>` first tries the official CX route. If the command shape is
-unsupported or intentionally parser-risky, it can run through exact direct
-passthrough when that local setting is enabled.
-
-Enable passthrough explicitly:
-
-```sh
-cx insights settings --set passthrough_unsupported_commands=true
-```
+unsupported or intentionally parser-risky, it runs through exact direct
+passthrough by default.
 
 Shell syntax remains explicit:
 
@@ -179,22 +219,28 @@ file content.
 
 ## Inspectable Local Insights
 
-Insights are **disabled by default**. CX has no vendor analytics service. When
-enabled, records are written to:
+Local insights are **enabled by default**. CX has no vendor analytics service.
+The first command routed through CX creates:
 
 ```text
 ~/.cx/db.sqlite
 ```
 
-Enable only the data you want:
+The default records invocation metrics and a redacted command shape. It does
+not retain full command text, argv JSON, source labels, failure responses, or
+response previews. Disable passive invocation recording with:
 
 ```sh
-cx insights settings \
-  --set record_invocations=true \
-  --set record_command_shape=true
+cx insights settings --set record_invocations=false
 ```
 
-Command text is a separate, optional setting:
+For a process-level opt-out that performs no insights writes:
+
+```sh
+CX_DISABLE_INSIGHTS=1 cx -- <command...>
+```
+
+Command text remains a separate, optional setting:
 
 ```sh
 cx insights settings --set record_command_text=true
@@ -209,7 +255,7 @@ off unless you want that information in your local database.
     <td align="center">
       <img src="docs/assets/cx-local-sqlite.png" alt="Finder showing the local CX runtime, cache, backups, and db.sqlite under the .cx directory" width="659">
       <br>
-      <sub>The runtime binary, cache, backups, and optional SQLite database are ordinary local files under <code>~/.cx</code>.</sub>
+      <sub>The runtime binary, cache, backups, and local SQLite database are ordinary local files under <code>~/.cx</code>.</sub>
     </td>
   </tr>
   <tr>
@@ -334,58 +380,6 @@ optional local SQLite metrics
 
 The file-backed process boundary avoids a common pipe hang where a descendant
 inherits stdout or stderr after the direct child exits.
-
-## Agent Instruction
-
-Installing CX puts the binary on `PATH`; it does not configure Codex. Open
-`~/.codex/AGENTS.md` and add **one** of the following blocks.
-
-Enable one universal command prefix first:
-
-```sh
-cx insights settings --set passthrough_unsupported_commands=true
-```
-
-That durable setting creates or updates the local settings database. To avoid
-creating an insights database, set
-`CX_ENABLE_UNSUPPORTED_PASSTHROUGH=1` in the environment that launches Codex
-instead.
-
-### Simple Codex instruction
-
-Add this compact block to `~/.codex/AGENTS.md`:
-
-```text
-## CX command execution
-
-- Prefix every feasible external command with `cx --`.
-- Use `cx sh -lc '<command>'` when pipes, redirects, variables, globs, heredocs, or other shell syntax are required.
-- If CX output is clearly wrong, empty, or misleading, run `cx report <the same cx command>` before using the smallest useful native fallback.
-```
-
-### Advanced Codex instruction
-
-Add this block to `~/.codex/AGENTS.md` when Codex should also preserve exact
-evidence and protect local telemetry:
-
-```text
-## CX command execution
-
-- Prefix every feasible external command with `cx --`. Auto mode routes supported shapes through CX compaction and directly executes unsupported shapes when local passthrough is enabled.
-- Use `cx sh -lc '<command>'` or `cx sh <<'BASH' ... BASH` only when shell parsing is required. Do not expect direct argv execution to interpret pipes, redirects, environment assignments, globs, or heredocs.
-- For a remote multiline script, use `cx -- ssh <host> "bash -s" <<'REMOTE' ... REMOTE`.
-- Use `cx -- git diff` for compact human review. Use `cx -- git evidence-diff [COMMIT_OR_RANGE] [-- <paths...>]` for exact patch evidence consumed by another tool.
-- Preserve every `[full output: ...]` pointer emitted after a nonzero command; it identifies recoverable native output.
-- If CX output is clearly wrong, empty, truncated, or misleading even when the command exits zero, run `cx report <the same cx command>` before using a narrow native fallback.
-- Do not use `cx proxy`; unsupported commands use `cx -- <command...>`.
-- Keep fallback output narrow, for example `git diff -- <path>`, `rg -n <pattern> <path>`, or a fixed source range.
-- Never delete, reset, overwrite, or migrate the real `~/.cx/db.sqlite` during tests. Point experiments at `CX_INSIGHTS_DB_PATH=<project>/.tmp/cx.sqlite`.
-- Invocation metrics, command shapes, command text, sources, failure responses, and unsupported passthrough are separate settings. Do not enable command text or source recording unless the user wants those local values retained.
-```
-
-See [the passthrough contract](docs/features/passthrough.md) and
-[insights settings](docs/features/insights.md) for the exact execution and
-privacy controls.
 
 ## Truthful By Design
 

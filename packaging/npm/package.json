@@ -1,6 +1,6 @@
 {
   "name": "@contextlimit/cx",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Observable command output compression for OpenAI Codex workflows",
   "license": "MIT",
   "homepage": "https://github.com/contextlimit/cx",

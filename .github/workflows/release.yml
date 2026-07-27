@@ -93,7 +93,7 @@ jobs:
           HOME="$smoke_home" "./$asset" --help | grep -q "Usage: cx"
           output="$(HOME="$smoke_home" "./$asset" -- cat "$RUNNER_TEMP/cx-smoke.txt")"
           test "$output" = "$(printf 'alpha\nbeta')"
-          test ! -e "$smoke_home/.cx/db.sqlite"
+          test -e "$smoke_home/.cx/db.sqlite"
 
           shasum -a 256 "$asset" > "$asset.sha256"
           printf 'asset=%s\n' "$asset" >> "$GITHUB_OUTPUT"

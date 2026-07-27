@@ -10,8 +10,8 @@ cx -- <command...>
 ```
 
 When the command is a clear official CX shape, auto mode routes it to the
-official wrapper. When it is unsupported, passthrough may run it directly if the
-local setting is enabled.
+official wrapper. When it is unsupported, passthrough runs it directly by
+default.
 
 Passthrough does not mask argument conflicts or malformed invocations of
 CX-owned command roots. Invalid `read`, `insights`, `report`, and `sh` shapes
@@ -21,11 +21,13 @@ remain eligible for passthrough.
 
 ## Enablement
 
-Unsupported passthrough is disabled by default.
+Unsupported passthrough is enabled by default. No setup command or insights
+database is required to make `cx -- <command...>` execute.
 
-Enable it in the insights settings table:
+Disable or re-enable it explicitly in the local settings table:
 
 ```sh
+cx insights settings --set passthrough_unsupported_commands=false
 cx insights settings --set passthrough_unsupported_commands=true
 ```
 
@@ -33,27 +35,17 @@ When explicit auto mode sees an eligible unsupported command while passthrough
 is disabled, it returns the same setting command as actionable guidance instead
 of only reporting an unknown CX subcommand.
 
-In this environment, operator guidance may enable it along with invocation
-recording:
+Disabling insights does not disable passthrough:
 
 ```sh
-cx insights settings --set record_invocations=true --set passthrough_unsupported_commands=true
-```
-
-Environment support also exists for explicit passthrough enablement.
-
-The explicit environment override remains available when insights recording is
-disabled:
-
-```sh
-CX_DISABLE_INSIGHTS=1 CX_ENABLE_UNSUPPORTED_PASSTHROUGH=1 \
-  cx -- sqlite3 -readonly ~/.cx/db.sqlite 'select 1;'
+CX_DISABLE_INSIGHTS=1 cx -- sqlite3 -readonly ~/.cx/db.sqlite 'select 1;'
 ```
 
 This separates execution policy from telemetry policy. CX executes the
-unsupported command without creating or writing an insights database. Without
-the explicit passthrough override, disabling insights does not enable
-unsupported commands.
+unsupported command without creating or writing an insights database.
+
+`CX_ENABLE_UNSUPPORTED_PASSTHROUGH=1` remains available as a process-level force
+enable when a persisted local setting has disabled passthrough.
 
 ## Recursive CX Refusal
 

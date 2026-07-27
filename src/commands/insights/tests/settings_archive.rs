@@ -51,19 +51,6 @@ fn run_settings_lists_defaults_without_creating_database_and_can_set_values() {
             let output = run_settings(&[]).unwrap();
             assert!(output.stdout.contains("cx insights: settings"));
             assert!(output.stdout.contains("Database exists: no"));
-            assert!(output.stdout.contains("record_invocations | false"));
-            assert!(output.stdout.contains("record_command_shape | true"));
-            assert!(output.stdout.contains("command_optimizations | true"));
-            assert!(output
-                .stdout
-                .contains("compact_document_search_results | false"));
-            assert!(output
-                .stdout
-                .contains("passthrough_unsupported_commands | false"));
-            assert!(!home.join(".cx/db.sqlite").exists());
-
-            let output = run_settings(&["record_invocations=true".to_string()]).unwrap();
-            assert!(output.stdout.contains("Database exists: yes"));
             assert!(output.stdout.contains("record_invocations | true"));
             assert!(output.stdout.contains("record_command_shape | true"));
             assert!(output.stdout.contains("command_optimizations | true"));
@@ -72,8 +59,27 @@ fn run_settings_lists_defaults_without_creating_database_and_can_set_values() {
                 .contains("compact_document_search_results | false"));
             assert!(output
                 .stdout
-                .contains("passthrough_unsupported_commands | false"));
+                .contains("passthrough_unsupported_commands | true"));
+            assert!(!home.join(".cx/db.sqlite").exists());
+
+            let output = run_settings(&["record_invocations=false".to_string()]).unwrap();
+            assert!(output.stdout.contains("Database exists: yes"));
+            assert!(output.stdout.contains("record_invocations | false"));
+            assert!(output
+                .stdout
+                .contains("passthrough_unsupported_commands | true"));
             assert!(home.join(".cx/db.sqlite").exists());
+
+            let output = run_settings(&["record_invocations=true".to_string()]).unwrap();
+            assert!(output.stdout.contains("record_invocations | true"));
+            assert!(output.stdout.contains("record_command_shape | true"));
+            assert!(output.stdout.contains("command_optimizations | true"));
+            assert!(output
+                .stdout
+                .contains("compact_document_search_results | false"));
+            assert!(output
+                .stdout
+                .contains("passthrough_unsupported_commands | true"));
 
             let output = run_settings(&[
                 "record_failures=true".to_string(),
@@ -83,6 +89,11 @@ fn run_settings_lists_defaults_without_creating_database_and_can_set_values() {
             assert!(output.stdout.contains("record_failures | true"));
             assert!(output.stdout.contains("record_failure_responses | true"));
 
+            let output =
+                run_settings(&["passthrough_unsupported_commands=false".to_string()]).unwrap();
+            assert!(output
+                .stdout
+                .contains("passthrough_unsupported_commands | false"));
             let output =
                 run_settings(&["passthrough_unsupported_commands=true".to_string()]).unwrap();
             assert!(output

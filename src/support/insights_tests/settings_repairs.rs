@@ -227,7 +227,7 @@ fn command_shape_strips_cx_auto_mode_marker_without_recording_argv_text() {
 }
 
 #[test]
-fn settings_enable_unsupported_passthrough_gate() {
+fn settings_can_disable_and_reenable_default_passthrough() {
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path().join("home");
     crate::support::test_support::with_env_vars(
@@ -239,6 +239,9 @@ fn settings_enable_unsupported_passthrough_gate() {
             ("CX_ENABLE_UNSUPPORTED_PASSTHROUGH", None),
         ],
         || {
+            assert!(unsupported_passthrough_enabled().unwrap());
+            assert!(!home.join(".cx").exists());
+            set_insight_setting("passthrough_unsupported_commands", "false").unwrap();
             assert!(!unsupported_passthrough_enabled().unwrap());
             set_insight_setting("passthrough_unsupported_commands", "true").unwrap();
             assert!(unsupported_passthrough_enabled().unwrap());
@@ -247,7 +250,7 @@ fn settings_enable_unsupported_passthrough_gate() {
 }
 
 #[test]
-fn explicit_passthrough_override_survives_disabled_insights() {
+fn default_passthrough_survives_disabled_insights() {
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path().join("home");
     crate::support::test_support::with_env_vars(
@@ -256,11 +259,67 @@ fn explicit_passthrough_override_survives_disabled_insights() {
             ("CX_INSIGHTS_DB_PATH", None),
             ("CX_ENABLE_INSIGHTS", None),
             ("CX_DISABLE_INSIGHTS", Some("1")),
-            ("CX_ENABLE_UNSUPPORTED_PASSTHROUGH", Some("1")),
+            ("CX_ENABLE_UNSUPPORTED_PASSTHROUGH", None),
         ],
         || {
             assert!(unsupported_passthrough_enabled().unwrap());
             assert!(!home.join(".cx").exists());
+        },
+    );
+}
+
+#[test]
+fn legacy_default_rows_adopt_current_defaults_but_explicit_rows_do_not() {
+    let temp = tempfile::tempdir().unwrap();
+    let db_path = temp.path().join("db.sqlite");
+    crate::support::test_support::with_env_vars(
+        &[
+            (
+                "CX_INSIGHTS_DB_PATH",
+                Some(db_path.to_string_lossy().as_ref()),
+            ),
+            ("CX_ENABLE_INSIGHTS", None),
+            ("CX_DISABLE_INSIGHTS", None),
+        ],
+        || {
+            let connection = rusqlite::Connection::open(&db_path).unwrap();
+            create_schema(&connection).unwrap();
+            connection
+                .execute(
+                    "UPDATE settings SET value = 'false', updated_at_ms = 0 \
+                     WHERE key IN ('record_invocations', 'passthrough_unsupported_commands')",
+                    [],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "UPDATE schema_meta SET value = '19' \
+                     WHERE key = 'insights_schema_version'",
+                    [],
+                )
+                .unwrap();
+            drop(connection);
+
+            let defaults = settings::recording_settings().unwrap();
+            assert!(defaults.record_invocations);
+            assert!(defaults.passthrough_unsupported_commands);
+
+            set_insight_setting("passthrough_unsupported_commands", "false").unwrap();
+            let explicit = settings::recording_settings().unwrap();
+            assert!(explicit.record_invocations);
+            assert!(!explicit.passthrough_unsupported_commands);
+
+            let connection = rusqlite::Connection::open(&db_path).unwrap();
+            let rows = connection
+                .query_row(
+                    "SELECT \
+                        (SELECT value FROM settings WHERE key = 'record_invocations'), \
+                        (SELECT value FROM settings WHERE key = 'passthrough_unsupported_commands')",
+                    [],
+                    |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)),
+                )
+                .unwrap();
+            assert_eq!(rows, ("true".to_string(), "false".to_string()));
         },
     );
 }

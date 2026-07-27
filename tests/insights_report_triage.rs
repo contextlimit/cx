@@ -376,7 +376,7 @@ fn schema_18_disposition_constraint_migrates_to_19_without_losing_rows() {
 }
 
 fn assert_migrated_disposition_schema(db_path: &std::path::Path) {
-    assert_eq!(schema_version(db_path), "19");
+    assert_eq!(schema_version(db_path), "20");
     let connection = rusqlite::Connection::open(db_path).unwrap();
     let table_sql: String = connection
         .query_row(

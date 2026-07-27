@@ -24,8 +24,9 @@ When using auto mode, the same clear shapes are available through `cx --`:
 - `cx -- git evidence-diff`
 - `cx -- git conflict-diff`
 
-Unsupported or parser-risky Git commands may fall through passthrough when the
-local `passthrough_unsupported_commands` setting is enabled.
+Unsupported or parser-risky Git commands fall through exact passthrough by
+default. Users can disable that behavior with the local
+`passthrough_unsupported_commands` setting.
 
 ## Status
 

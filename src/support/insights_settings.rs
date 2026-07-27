@@ -21,7 +21,7 @@ const EXPLICIT_SETTINGS_BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 const SETTING_DEFINITIONS: &[SettingDefinition] = &[
     SettingDefinition {
         key: RECORD_INVOCATIONS,
-        default: false,
+        default: true,
         description: "passively record command invocation metrics",
     },
     SettingDefinition {
@@ -56,7 +56,7 @@ const SETTING_DEFINITIONS: &[SettingDefinition] = &[
     },
     SettingDefinition {
         key: PASSTHROUGH_UNSUPPORTED_COMMANDS,
-        default: false,
+        default: true,
         description: "direct-exec unsupported command families through CX",
     },
     SettingDefinition {
@@ -103,7 +103,7 @@ impl InsightSettings {
             record_failures: true,
             record_failure_responses: true,
             record_response_previews: true,
-            passthrough_unsupported_commands: false,
+            passthrough_unsupported_commands: true,
             command_optimizations: true,
             compact_document_search_results: false,
             pending_report_evidence_at_ms: 0,
@@ -179,19 +179,20 @@ pub fn unsupported_passthrough_enabled() -> Result<bool> {
     if env_truthy("CX_ENABLE_UNSUPPORTED_PASSTHROUGH") {
         return Ok(true);
     }
+    let default = default_settings_from_definitions().passthrough_unsupported_commands;
     if super::insights_disabled() {
-        return Ok(false);
+        return Ok(default);
     }
     let db_path = super::insights_db_file()?;
     if !db_path.is_file() {
-        return Ok(false);
+        return Ok(default);
     }
     let connection = Connection::open_with_flags(
         &db_path,
         OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
     )?;
     if !super::table_exists(&connection, "settings")? {
-        return Ok(false);
+        return Ok(default);
     }
     Ok(settings_from_connection(&connection)?.passthrough_unsupported_commands)
 }
@@ -307,8 +308,11 @@ pub(super) fn insert_default_settings(connection: &Connection) -> Result<()> {
     for definition in SETTING_DEFINITIONS {
         connection.execute(
             "
-            INSERT OR IGNORE INTO settings (key, value, updated_at_ms)
+            INSERT INTO settings (key, value, updated_at_ms)
             VALUES (?1, ?2, 0)
+            ON CONFLICT(key) DO UPDATE SET
+                value = excluded.value
+            WHERE settings.updated_at_ms = 0
             ",
             params![definition.key, bool_text(definition.default)],
         )?;
@@ -318,14 +322,7 @@ pub(super) fn insert_default_settings(connection: &Connection) -> Result<()> {
 
 fn settings_from_connection(connection: &Connection) -> Result<InsightSettings> {
     let mut settings = default_settings_from_definitions();
-    let mut statement = connection.prepare("SELECT key, value FROM settings")?;
-    let rows = statement.query_map([], |row| {
-        Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?))
-    })?;
-    for row in rows {
-        let (key, value) = row?;
-        apply_setting_value(&mut settings, &key, &value)?;
-    }
+    apply_explicit_settings(connection, &mut settings)?;
     Ok(settings)
 }
 

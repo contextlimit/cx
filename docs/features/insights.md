@@ -40,14 +40,15 @@ Important settings:
 - `passthrough_unsupported_commands`: direct-exec unsupported command families.
 - `command_optimizations`: enable optional CX command optimizations.
 
-Insights recording is disabled by default unless enabled by settings or
-environment. Command text recording is optional and controlled separately.
+Invocation metrics, redacted command shapes, and unsupported passthrough are
+enabled by default. The first routed command creates `~/.cx/db.sqlite`.
+Command text, source labels, failure-response bodies, and response previews are
+optional and controlled separately.
 
-Operators that need an unsupported command without recording can combine
-`CX_DISABLE_INSIGHTS=1` with
-`CX_ENABLE_UNSUPPORTED_PASSTHROUGH=1`. This is useful for inspecting the CX
-database itself without adding an invocation row. Prefer the supported
-`cx insights ...` commands for routine audits.
+Operators that need a command without recording can set
+`CX_DISABLE_INSIGHTS=1`; unsupported passthrough remains available. This is
+useful for inspecting the CX database itself without adding an invocation row.
+Prefer the supported `cx insights ...` commands for routine audits.
 
 ## Metrics
 
@@ -399,10 +400,11 @@ rows are explicitly marked with `estimate: true`; they are not included in
 realized savings totals.
 
 The dashboard does not create the database when it is missing. A consumer must
-honor `empty_state.database_missing` and require an explicit settings action
-before enabling recording.
+honor `empty_state.database_missing` and explain that the next command routed
+through CX will create it. When recording was explicitly disabled, the UI may
+offer a setting action to re-enable it.
 
-The current SQLite schema version is `19`, the export schema version is `18`,
+The current SQLite schema version is `20`, the export schema version is `18`,
 and the dashboard schema version is `12`. SQLite `command_invocations` rows carry
 `expanded_bytes`, `expanded_chars`, `expanded_lines`, `expanded_tokens`, and
 `expansion_reason`. `command_totals` carries aggregate expansion count and

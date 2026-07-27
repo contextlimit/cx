@@ -15,7 +15,7 @@ use super::format_utils::{
 
 pub(super) fn no_data_message() -> Result<String> {
     Ok(format!(
-        "cx insights: no data yet\nDatabase: {}\nEnable `record_invocations` with `cx insights settings --set record_invocations=true` to populate savings telemetry.",
+        "cx insights: no data yet\nDatabase: {}\nCX records invocation metrics by default. Run a command through CX, or inspect `cx insights settings` if recording was disabled.",
         insights::insights_database_path()?.display()
     ))
 }

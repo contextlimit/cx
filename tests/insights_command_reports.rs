@@ -278,7 +278,7 @@ fn legacy_report_database_reads_as_open_and_migrates_on_update() {
             |row| row.get(0),
         )
         .unwrap();
-    assert_eq!(version, "19");
+    assert_eq!(version, "20");
     let journal_mode: String = connection
         .query_row("PRAGMA journal_mode", [], |row| row.get(0))
         .unwrap();

@@ -45,7 +45,7 @@ fn enable_recording(home: &Path, command_text: bool) {
 }
 
 #[test]
-fn rejected_route_does_not_create_default_database_when_recording_is_disabled() {
+fn rejected_route_records_routing_evidence_by_default() {
     let temp = tempfile::tempdir().unwrap();
     let home = temp.path().join("home");
     std::fs::create_dir_all(&home).unwrap();
@@ -56,7 +56,26 @@ fn rejected_route_does_not_create_default_database_when_recording_is_disabled() 
     );
 
     assert_eq!(output.status.code(), Some(2));
-    assert!(!database_path(&home).exists());
+    let connection = Connection::open(database_path(&home)).unwrap();
+    let row = connection
+        .query_row(
+            "SELECT process, command_family, decision, passthrough_enabled \
+             FROM command_routing_decisions",
+            [],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, String>(2)?,
+                    row.get::<_, bool>(3)?,
+                ))
+            },
+        )
+        .unwrap();
+    assert_eq!(row.0, "read");
+    assert_eq!(row.1, "read");
+    assert_eq!(row.2, "rejected");
+    assert!(row.3);
 }
 
 #[test]
@@ -193,7 +212,7 @@ fn passthrough_disabled_rejection_keeps_command_text_optional() {
             |row| row.get(0),
         )
         .unwrap();
-    assert_eq!(version, "19");
+    assert_eq!(version, "20");
     let journal_mode: String = connection
         .query_row("PRAGMA journal_mode", [], |row| row.get(0))
         .unwrap();

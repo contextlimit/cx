@@ -63,11 +63,12 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
         "npm install -g @contextlimit/cx",
         "brew install contextlimit/tap/cx",
         "~/.codex/AGENTS.md",
-        "### Simple Codex instruction",
-        "### Advanced Codex instruction",
+        "### Agent Instruction",
+        "#### Simple Codex instruction",
+        "#### Advanced Codex instruction",
         "CX Insights UI preview, coming soon",
         "~/.cx/db.sqlite",
-        "Insights are **disabled by default**",
+        "Local insights are **enabled by default**",
         "CX has no vendor analytics service",
         "https://discord.gg/5esGQ5qyrw",
         "https://x.com/contextlimit",
@@ -78,6 +79,14 @@ fn public_readme_exposes_install_codex_community_and_privacy_contracts() {
     ] {
         assert!(readme.contains(required), "README missing `{required}`");
     }
+
+    let install = readme.find("## Install").unwrap();
+    let agent_instruction = readme.find("### Agent Instruction").unwrap();
+    let quick_start = readme.find("## Quick Start").unwrap();
+    assert!(
+        install < agent_instruction && agent_instruction < quick_start,
+        "Agent Instruction must remain an Install subheading"
+    );
 
     let local_files = readme.find("docs/assets/cx-local-sqlite.png").unwrap();
     let sqlite_tables = readme.find("docs/assets/cx-sqlite-tables.png").unwrap();

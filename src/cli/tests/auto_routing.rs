@@ -2,7 +2,7 @@ use super::*;
 use clap::error::ErrorKind;
 
 #[test]
-fn unsupported_passthrough_is_disabled_by_default() {
+fn unsupported_passthrough_is_enabled_by_default() {
     let temp = tempfile::tempdir().unwrap();
     let db_path = temp.path().join("db.sqlite");
     let db_path_string = db_path.to_string_lossy().to_string();
@@ -13,13 +13,18 @@ fn unsupported_passthrough_is_disabled_by_default() {
             ("CX_DISABLE_INSIGHTS", None),
         ],
         || {
-            assert!(try_parse_from_cx_args(["cx", "uname", "-a"]).is_err());
+            let cli = try_parse_from_cx_args(["cx", "uname", "-a"]).unwrap();
+            let Command::Passthrough { args } = cli.command else {
+                panic!("expected passthrough command");
+            };
+            assert_eq!(args, ["uname", "-a"]);
+            assert!(!db_path.exists());
         },
     );
 }
 
 #[test]
-fn explicit_unknown_command_explains_how_to_enable_passthrough() {
+fn explicit_unknown_command_explains_how_to_reenable_passthrough() {
     let temp = tempfile::tempdir().unwrap();
     let db_path = temp.path().join("db.sqlite");
     let db_path_string = db_path.to_string_lossy().to_string();
@@ -30,6 +35,11 @@ fn explicit_unknown_command_explains_how_to_enable_passthrough() {
             ("CX_DISABLE_INSIGHTS", None),
         ],
         || {
+            crate::support::insights::set_insight_setting(
+                "passthrough_unsupported_commands",
+                "false",
+            )
+            .unwrap();
             let error = try_parse_from_cx_args(["cx", "--", "uptime"]).unwrap_err();
             assert_eq!(error.kind(), ErrorKind::InvalidSubcommand);
             let rendered = error.to_string();
